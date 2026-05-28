@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from brief import synthesize
 from config import WEEKLY_TOPICS
 from image_gen import generate as generate_image
+from image_host import upload as upload_image
 from instagram_caption import build_post
 from instagram_publish import InstagramPublisher
 from safety import (
@@ -40,21 +41,11 @@ def topic_for(day: date) -> str:
     return WEEKLY_TOPICS[day.toordinal() % len(WEEKLY_TOPICS)]
 
 
-def upload_to_public_url(image_path: pathlib.Path) -> str:
-    """Upload the image to a public HTTPS URL.
-
-    The Graph API can't read local files. Wire this to your bucket of
-    choice (S3 / R2 / Supabase Storage) and return the public URL.
-    """
-    env_url = os.environ.get("IMAGE_PUBLIC_URL_TEMPLATE")
-    if env_url:
-        return env_url.format(filename=image_path.name)
-    raise RuntimeError(
-        "No image host configured. Set IMAGE_PUBLIC_URL_TEMPLATE "
-        "(e.g. https://cdn.example.com/bbq/{filename}) and upload the "
-        "file there, or replace upload_to_public_url() with a real "
-        "uploader."
-    )
+def upload_to_public_url(image_path: pathlib.Path, *, date_prefix: str) -> str:
+    """Push the cover image into the Supabase `bbq-covers` public bucket and
+    return its public URL (the URL the IG Graph API will fetch)."""
+    dest = f"{date_prefix}/{image_path.name}"
+    return upload_image(image_path, dest_name=dest)
 
 
 def main() -> int:
@@ -97,7 +88,8 @@ def main() -> int:
         print(post.first_comment)
         return 0
 
-    image_url = upload_to_public_url(img.path)
+    image_url = upload_to_public_url(img.path, date_prefix=target_day.isoformat())
+    print(f"    uploaded: {image_url}", file=sys.stderr)
     publisher = InstagramPublisher()
     try:
         result = publisher.publish(image_url, post.caption, post.first_comment)

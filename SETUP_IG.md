@@ -41,16 +41,27 @@ GET /{page-id}?fields=instagram_business_account&access_token={token}
 The returned `instagram_business_account.id` is your `IG_USER_ID`. Save it
 in `.env`.
 
-## 6. Image hosting
-The Graph API requires `image_url` to be a public HTTPS URL. Options:
-- Supabase Storage public bucket (free tier is plenty here)
-- Cloudflare R2 with public access
-- S3 + CloudFront
+## 6. Image hosting (Supabase — already provisioned)
+A dedicated Supabase project `jerseysmokebbq`
+(ref `tewmbnlldtavuqzaolve`, us-east-1) and a public bucket `bbq-covers`
+(5 MB cap, png/jpeg/webp) are already in place. The uploader lives at
+`image_host.upload()` and is wired into `publish_brief.py`.
 
-Set `IMAGE_PUBLIC_URL_TEMPLATE` in `.env`, e.g.
-`https://cdn.jerseysmokebbq.com/{filename}`, and replace
-`upload_to_public_url()` in `publish_brief.py` with a real uploader that
-pushes the file to that bucket before publishing.
+You only need to grab the **service-role key** and set two env vars:
+
+1. In the Supabase dashboard, open the `jerseysmokebbq` project →
+   **Project Settings → API → Project API keys → service_role**. Copy.
+2. Locally, add to `.env`:
+   ```
+   SUPABASE_URL=https://tewmbnlldtavuqzaolve.supabase.co
+   SUPABASE_SERVICE_ROLE_KEY=<paste>
+   ```
+3. In GitHub: repo **Settings → Secrets and variables → Actions → New
+   secret** for both `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+
+> The service-role key bypasses RLS — never expose it to a browser or to
+> the IG side. It only lives in `.env` (gitignored) and in the GitHub
+> Actions secret store.
 
 ## 7. Verify with a preview run
 ```

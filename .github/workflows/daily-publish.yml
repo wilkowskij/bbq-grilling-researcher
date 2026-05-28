@@ -27,6 +27,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-          IMAGE_PUBLIC_URL_TEMPLATE: ${{ secrets.IMAGE_PUBLIC_URL_TEMPLATE }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           PUBLISH_ENABLED: ${{ vars.PUBLISH_ENABLED || 'true' }}
         run: python publish_brief.py

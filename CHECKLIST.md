@@ -41,9 +41,13 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
 - [x] `OPENAI_API_KEY` added to `.env.example`
 - [x] `image_gen.generate()`: topic → 1024x1024 photoreal cover
 - [x] Prompt tuned: no text/logos/faces, real pitmaster look (not stock)
-- [ ] **Upload to a public HTTPS URL** — stub in `publish_brief.upload_to_public_url`
-      raises until the user wires S3 / R2 / Supabase Storage
-- [ ] TTL bucket to auto-delete images > 30 days
+- [x] Supabase project provisioned: **jerseysmokebbq**
+      (`tewmbnlldtavuqzaolve`, us-east-1, free tier)
+- [x] Public bucket **bbq-covers** created (5 MB cap, png/jpeg/webp)
+- [x] `image_host.upload()` wired in via `publish_brief.upload_to_public_url`
+- [ ] **User TODO**: paste service-role key into `.env` +
+      GitHub Actions secret `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] TTL bucket to auto-delete images > 30 days (cron via Edge Function)
 
 ## 6. Publish flow (`instagram_publish.py`)
 - [x] `_create_container` → POST `/{ig-user-id}/media`
@@ -65,7 +69,7 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
 - [x] `PUBLISH_ENABLED` repo variable as kill-switch
 - [ ] **User TODO**: add repo secrets (`TAVILY_API_KEY`, `ANTHROPIC_API_KEY`,
       `OPENAI_API_KEY`, `IG_USER_ID`, `IG_ACCESS_TOKEN`,
-      `IMAGE_PUBLIC_URL_TEMPLATE`)
+      `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
 
 ## 9. Safety & quality gates (auto-publish mode)
 - [x] Decision: auto-publish on schedule (no manual approval gate)
