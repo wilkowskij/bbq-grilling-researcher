@@ -50,7 +50,8 @@ class InstagramPublisher:
             },
             timeout=30,
         )
-        r.raise_for_status()
+        if not r.ok:
+            raise IGPublishError(f"create container failed [{r.status_code}]: {r.text}")
         cid = r.json().get("id")
         if not cid:
             raise IGPublishError(f"no container id returned: {r.text}")
@@ -64,7 +65,8 @@ class InstagramPublisher:
                 params={"fields": "status_code", "access_token": self.token},
                 timeout=30,
             )
-            r.raise_for_status()
+            if not r.ok:
+                raise IGPublishError(f"status check failed [{r.status_code}]: {r.text}")
             status = r.json().get("status_code")
             if status == "FINISHED":
                 return
@@ -79,7 +81,8 @@ class InstagramPublisher:
             data={"creation_id": creation_id, "access_token": self.token},
             timeout=30,
         )
-        r.raise_for_status()
+        if not r.ok:
+            raise IGPublishError(f"publish failed [{r.status_code}]: {r.text}")
         mid = r.json().get("id")
         if not mid:
             raise IGPublishError(f"no media id returned: {r.text}")
