@@ -1,0 +1,28 @@
+name: Mint IG token
+
+on:
+  workflow_dispatch:
+    inputs:
+      auth_code:
+        description: 'Authorization code from the https://localhost/?code=XXXX redirect URL'
+        required: true
+        type: string
+
+jobs:
+  mint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install requests
+
+      - name: Exchange code for IG tokens
+        env:
+          META_APP_ID: ${{ secrets.META_APP_ID }}
+          META_APP_SECRET: ${{ secrets.META_APP_SECRET }}
+          AUTH_CODE: ${{ inputs.auth_code }}
+        run: python mint_ig_token_ci.py
