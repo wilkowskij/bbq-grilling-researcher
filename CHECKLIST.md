@@ -13,72 +13,70 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
 - [ ] Add a `--dry-run` flag that prints sources without calling Claude
 
 ## 2. Instagram target configuration
-- [ ] Capture target IG page handle — **NEEDED FROM USER** (paste in chat)
+- [x] Target IG page handle: **@jerseysmokebbq**
 - [x] Account is Business/Creator + linked to a Facebook Page (user-confirmed)
-- [ ] Record `IG_USER_ID` (the business account's IG ID) in `.env`
+- [ ] Record `IG_USER_ID` (the business account's IG ID) in `.env` — pulled
+      from the Meta app once §3 is done
 - [x] Posting cadence: **daily**, 1 topic/day from `WEEKLY_TOPICS`
 
-## 3. Auth & credentials
-- [ ] Create / reuse a Meta Developer App (type: Business)
-- [ ] Add Instagram Graph API + Facebook Login products to the app
-- [ ] Generate a **long-lived** Page access token (60-day) with scopes:
-      `instagram_basic`, `instagram_content_publish`, `pages_show_list`,
-      `pages_read_engagement`
-- [ ] Store token in `.env` as `IG_ACCESS_TOKEN`
-- [ ] Add token-refresh helper (or document the manual 60-day rotation)
+## 3. Auth & credentials — **manual user steps, see `SETUP_IG.md`**
+- [x] Setup doc written (`SETUP_IG.md`) with full Meta-app walkthrough
+- [x] `.env` slots added: `IG_USER_ID`, `IG_ACCESS_TOKEN`,
+      `IMAGE_PUBLIC_URL_TEMPLATE`, `PUBLISH_ENABLED`
+- [ ] **User TODO**: create Meta app, mint long-lived Page token, populate
+      `.env` (blocked on the user, not on code)
+- [ ] Token-refresh helper (60-day rotation) — deferred until v2
 
-## 4. Brief → Instagram caption adapter (`instagram_post.py`)
-- [ ] Trim brief to ≤ 2,200 chars (IG caption limit)
-- [ ] Extract a punchy hook from the `VERDICT:` line as the first line
-- [ ] Append a curated hashtag block (e.g. `#bbq #pitmaster #smokedmeat`)
-- [ ] Strip markdown headings/links the IG renderer won't honor
-- [ ] Preserve source attribution as a tail block ("Sources in comments")
-- [ ] Auto-generate a first-comment payload containing the source URLs
-      (URLs in captions don't render as links on IG anyway)
+## 4. Brief → Instagram caption adapter (`instagram_caption.py`)
+- [x] Caption built and capped at 2,200 chars (`build_post`)
+- [x] VERDICT line extracted as the opening hook (multi-line aware)
+- [x] Curated brand + topic-aware hashtag block (≤ 30 tags)
+- [x] Markdown headings/links/bold stripped
+- [x] "Sources in the comments ↓" tail block
+- [x] First-comment payload with source URLs
+- [x] Smoke test passes (`test_caption.py`)
 
-## 5. Image asset for the post
-- [x] Strategy: **AI-generated cover per topic** via **OpenAI `gpt-image-1`**
-- [ ] Add `OPENAI_API_KEY` to `.env` and `.env.example`
-- [ ] Implement `image_gen.py`: topic → photoreal BBQ cover (1:1, 1080px)
-- [ ] Tune the image prompt to avoid text artifacts and stock-photo look
-- [ ] Upload generated image to a public HTTPS URL (IG Graph API requires a
-      public URL, not a local file) — likely S3 / R2 / Supabase Storage
-- [ ] TTL the upload bucket to auto-delete images > 30 days old
+## 5. Image asset for the post (`image_gen.py`)
+- [x] Strategy: AI-generated cover per topic via OpenAI `gpt-image-1`
+- [x] `OPENAI_API_KEY` added to `.env.example`
+- [x] `image_gen.generate()`: topic → 1024x1024 photoreal cover
+- [x] Prompt tuned: no text/logos/faces, real pitmaster look (not stock)
+- [ ] **Upload to a public HTTPS URL** — stub in `publish_brief.upload_to_public_url`
+      raises until the user wires S3 / R2 / Supabase Storage
+- [ ] TTL bucket to auto-delete images > 30 days
 
 ## 6. Publish flow (`instagram_publish.py`)
-- [ ] POST `/{ig-user-id}/media` to create a media container with the image
-      URL + caption
-- [ ] Poll the container's `status_code` until it returns `FINISHED`
-- [ ] POST `/{ig-user-id}/media_publish` with the creation ID
-- [ ] Capture the returned media ID and log it
-- [ ] Post the source-attribution block as the first comment via
-      `/{ig-media-id}/comments`
+- [x] `_create_container` → POST `/{ig-user-id}/media`
+- [x] `_wait_finished` polls `status_code` until `FINISHED` (90s timeout)
+- [x] `_publish` → POST `/{ig-user-id}/media_publish`
+- [x] `_comment` posts the source block as first comment
+- [ ] Live-fire test against the real IG account (blocked on §3 token)
 
-## 7. Orchestration
-- [ ] Wire `researcher.py` → `instagram_post.py` → `instagram_publish.py`
-      into a single `publish_brief.py` entry point
-- [ ] Add a `--preview` mode that writes the caption + image to disk
-      without hitting the IG API
-- [ ] Add a confirmation prompt before the live publish call
+## 7. Orchestration (`publish_brief.py`)
+- [x] Single entry point: research → caption → image → publish
+- [x] `--preview` flag: generates everything, skips IG publish
+- [x] Deterministic daily topic rotation (`topic_for(date)`)
+- [x] Failed-publish payloads saved to `briefs/failed/<date>-<topic>.json`
 
 ## 8. Scheduling
-- [ ] Decide host (GitHub Actions cron / Railway / fly.io / cron on a VM)
-- [ ] Add a **daily** scheduled workflow (1 topic/day from `WEEKLY_TOPICS`,
-      round-robin by `date.today().toordinal() % len(WEEKLY_TOPICS)`)
-- [ ] Add a kill-switch env var (`PUBLISH_ENABLED=false`) so the schedule
-      can be paused without editing cron
+- [x] Host: GitHub Actions cron (`.github/workflows/daily-publish.yml`)
+- [x] Daily run at 14:30 UTC (10:30 AM ET)
+- [x] `workflow_dispatch` for manual runs
+- [x] `PUBLISH_ENABLED` repo variable as kill-switch
+- [ ] **User TODO**: add repo secrets (`TAVILY_API_KEY`, `ANTHROPIC_API_KEY`,
+      `OPENAI_API_KEY`, `IG_USER_ID`, `IG_ACCESS_TOKEN`,
+      `IMAGE_PUBLIC_URL_TEMPLATE`)
 
 ## 9. Safety & quality gates (auto-publish mode)
-- [x] Decision: **auto-publish on schedule** (no manual approval gate)
-- [ ] Pre-publish profanity / brand-safety check on the caption
-- [ ] Hard cap: refuse to publish if caption > 2,200 chars or hashtag
-      count > 30 (IG limits)
-- [ ] Rate-limit guard (IG: 25 API-published posts per 24h per account)
-- [ ] On publish failure, write the payload to `briefs/failed/` for retry
-- [ ] Optional emergency kill via `PUBLISH_ENABLED=false`
+- [x] Decision: auto-publish on schedule (no manual approval gate)
+- [x] Profanity / brand-safety wordlist check (`safety.check_caption`)
+- [x] Hard cap on caption length (2,200) and hashtag count (30)
+- [x] Rate-limit guard via local ledger (25 posts/24h)
+- [x] On publish failure, payload written to `briefs/failed/`
+- [x] `PUBLISH_ENABLED=false` emergency kill
 
 ## 10. Observability
-- [ ] Log every publish with media ID, topic, timestamp
+- [x] Every publish recorded in `.publish_ledger.json` (media id, topic, ts)
 - [ ] Weekly digest of what posted and what failed
-- [ ] Track engagement (likes / comments / saves) per topic to feed back
-      into topic selection
+- [ ] Pull engagement (likes / comments / saves) per topic via Graph API
+      Insights and feed back into topic selection

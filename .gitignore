@@ -4,3 +4,5 @@ __pycache__/
 .venv/
 venv/
 briefs/
+generated_images/
+.publish_ledger.json
