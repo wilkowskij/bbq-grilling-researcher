@@ -45,8 +45,7 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
       (`tewmbnlldtavuqzaolve`, us-east-1, free tier)
 - [x] Public bucket **bbq-covers** created (5 MB cap, png/jpeg/webp)
 - [x] `image_host.upload()` wired in via `publish_brief.upload_to_public_url`
-- [ ] **User TODO**: paste service-role key into `.env` +
-      GitHub Actions secret `SUPABASE_SERVICE_ROLE_KEY`
+- [x] GitHub Actions secrets set: `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
 - [ ] TTL bucket to auto-delete images > 30 days (cron via Edge Function)
 
 ## 6. Publish flow (`instagram_publish.py`)
@@ -67,9 +66,10 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
 - [x] Daily run at 14:30 UTC (10:30 AM ET)
 - [x] `workflow_dispatch` for manual runs
 - [x] `PUBLISH_ENABLED` repo variable as kill-switch
-- [ ] **User TODO**: add repo secrets (`TAVILY_API_KEY`, `ANTHROPIC_API_KEY`,
-      `OPENAI_API_KEY`, `IG_USER_ID`, `IG_ACCESS_TOKEN`,
-      `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`)
+- [x] Repo secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- [ ] **User TODO**: remaining repo secrets — `TAVILY_API_KEY`,
+      `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `IG_USER_ID`,
+      `IG_ACCESS_TOKEN`
 
 ## 9. Safety & quality gates (auto-publish mode)
 - [x] Decision: auto-publish on schedule (no manual approval gate)
