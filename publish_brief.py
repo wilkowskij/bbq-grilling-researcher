@@ -81,15 +81,18 @@ def main() -> int:
     img = generate_image(topic, IMAGES_DIR)
     print(f"    image: {img.path} ({img.bytes_len} bytes)", file=sys.stderr)
 
+    image_url = upload_to_public_url(img.path, date_prefix=target_day.isoformat())
+    print(f"    uploaded: {image_url}", file=sys.stderr)
+
     if args.preview:
         print("--- caption ---")
         print(post.caption)
         print("--- first comment ---")
         print(post.first_comment)
+        print(f"--- image_url ---\n{image_url}")
+        print("(preview mode: Supabase upload done, skipping IG publish)")
         return 0
 
-    image_url = upload_to_public_url(img.path, date_prefix=target_day.isoformat())
-    print(f"    uploaded: {image_url}", file=sys.stderr)
     publisher = InstagramPublisher()
     try:
         result = publisher.publish(image_url, post.caption, post.first_comment)
