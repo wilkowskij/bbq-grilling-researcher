@@ -19,9 +19,10 @@ from dotenv import load_dotenv
 from brief import synthesize
 from config import WEEKLY_TOPICS
 from image_gen import generate as generate_image
-from image_host import upload as upload_image
+from image_host import upload as upload_image, upload_html
 from instagram_caption import build_post
 from instagram_publish import InstagramPublisher
+from preview_html import render as render_preview
 from safety import (
     check_caption,
     check_publish_enabled,
@@ -85,11 +86,24 @@ def main() -> int:
     print(f"    uploaded: {image_url}", file=sys.stderr)
 
     if args.preview:
+        slug = topic.lower().replace(" ", "-").replace("/", "-")
+        preview_html = render_preview(
+            topic=topic,
+            date=target_day.isoformat(),
+            image_url=image_url,
+            caption=post.caption,
+            first_comment=post.first_comment,
+        )
+        preview_url = upload_html(
+            preview_html,
+            dest_name=f"{target_day.isoformat()}/{slug}.preview.html",
+        )
         print("--- caption ---")
         print(post.caption)
         print("--- first comment ---")
         print(post.first_comment)
         print(f"--- image_url ---\n{image_url}")
+        print(f"--- preview ---\n{preview_url}")
         print("(preview mode: Supabase upload done, skipping IG publish)")
         return 0
 
