@@ -13,12 +13,10 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
 - [ ] Add a `--dry-run` flag that prints sources without calling Claude
 
 ## 2. Instagram target configuration
-- [ ] Capture target IG page handle (e.g. `@your_bbq_page`) — **NEEDED FROM USER**
-- [ ] Confirm the account is an Instagram **Business** or **Creator** account
-      (required by the Graph API; personal accounts cannot publish via API)
-- [ ] Confirm the IG account is linked to a Facebook Page you admin
+- [ ] Capture target IG page handle — **NEEDED FROM USER** (paste in chat)
+- [x] Account is Business/Creator + linked to a Facebook Page (user-confirmed)
 - [ ] Record `IG_USER_ID` (the business account's IG ID) in `.env`
-- [ ] Decide posting cadence (daily / weekly / per-brief)
+- [x] Posting cadence: **daily**, 1 topic/day from `WEEKLY_TOPICS`
 
 ## 3. Auth & credentials
 - [ ] Create / reuse a Meta Developer App (type: Business)
@@ -39,13 +37,13 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
       (URLs in captions don't render as links on IG anyway)
 
 ## 5. Image asset for the post
-- [ ] Decide image strategy — pick one:
-      - [ ] AI-generated cover (e.g. a BBQ stock-style image per topic)
-      - [ ] Stock photo library keyed by topic slug
-      - [ ] Static branded template with the VERDICT overlaid as text
-- [ ] Implement image generation / selection module
-- [ ] Upload image to a public HTTPS URL (IG Graph API requires a public URL,
-      not a local file) — likely S3 / R2 / Supabase Storage
+- [x] Strategy: **AI-generated cover per topic** via **OpenAI `gpt-image-1`**
+- [ ] Add `OPENAI_API_KEY` to `.env` and `.env.example`
+- [ ] Implement `image_gen.py`: topic → photoreal BBQ cover (1:1, 1080px)
+- [ ] Tune the image prompt to avoid text artifacts and stock-photo look
+- [ ] Upload generated image to a public HTTPS URL (IG Graph API requires a
+      public URL, not a local file) — likely S3 / R2 / Supabase Storage
+- [ ] TTL the upload bucket to auto-delete images > 30 days old
 
 ## 6. Publish flow (`instagram_publish.py`)
 - [ ] POST `/{ig-user-id}/media` to create a media container with the image
@@ -65,16 +63,19 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
 
 ## 8. Scheduling
 - [ ] Decide host (GitHub Actions cron / Railway / fly.io / cron on a VM)
-- [ ] Add scheduled workflow that runs the weekly rotation
-- [ ] Add a kill-switch env var so the schedule can be paused without
-      editing cron
+- [ ] Add a **daily** scheduled workflow (1 topic/day from `WEEKLY_TOPICS`,
+      round-robin by `date.today().toordinal() % len(WEEKLY_TOPICS)`)
+- [ ] Add a kill-switch env var (`PUBLISH_ENABLED=false`) so the schedule
+      can be paused without editing cron
 
-## 9. Safety & quality gates
-- [ ] Manual review queue: briefs land in `briefs/pending/` and only publish
-      from `briefs/approved/`
-- [ ] Caption profanity / brand-safety check before publish
+## 9. Safety & quality gates (auto-publish mode)
+- [x] Decision: **auto-publish on schedule** (no manual approval gate)
+- [ ] Pre-publish profanity / brand-safety check on the caption
+- [ ] Hard cap: refuse to publish if caption > 2,200 chars or hashtag
+      count > 30 (IG limits)
 - [ ] Rate-limit guard (IG: 25 API-published posts per 24h per account)
 - [ ] On publish failure, write the payload to `briefs/failed/` for retry
+- [ ] Optional emergency kill via `PUBLISH_ENABLED=false`
 
 ## 10. Observability
 - [ ] Log every publish with media ID, topic, timestamp
