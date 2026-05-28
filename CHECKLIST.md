@@ -19,12 +19,20 @@ specific Instagram page. Update statuses as items complete: `[ ]` open,
       from the Meta app once §3 is done
 - [x] Posting cadence: **daily**, 1 topic/day from `WEEKLY_TOPICS`
 
-## 3. Auth & credentials — **manual user steps, see `SETUP_IG.md`**
-- [x] Setup doc written (`SETUP_IG.md`) with full Meta-app walkthrough
-- [x] `.env` slots added: `IG_USER_ID`, `IG_ACCESS_TOKEN`,
-      `IMAGE_PUBLIC_URL_TEMPLATE`, `PUBLISH_ENABLED`
-- [ ] **User TODO**: create Meta app, mint long-lived Page token, populate
-      `.env` (blocked on the user, not on code)
+## 3. Auth & credentials — **PIVOTED to Instagram Business Login**
+- [x] Old Facebook-Login + Page-token path abandoned (Meta UI permission
+      wall couldn't be cleared)
+- [x] Refactored to Instagram Business Login flow:
+      - `instagram_publish.py` now hits `graph.instagram.com` (not `.facebook.com`)
+      - Token is IG User token (`IGAA…`), not FB Page token (`EAA…`)
+      - Permissions: `instagram_business_basic`, `instagram_business_content_publish`
+- [x] `mint_ig_token.py` helper: walks the user through IG OAuth, prints
+      long-lived token + IG user id ready to paste into GitHub secrets
+- [x] `SETUP_IG.md` rewritten for the new flow
+- [ ] **User TODO**: enable Instagram Business Login + add `https://localhost/`
+      redirect URI in Meta app (use case section 4)
+- [ ] **User TODO**: run `mint_ig_token.py` locally → save tokens to
+      GitHub secrets
 - [ ] Token-refresh helper (60-day rotation) — deferred until v2
 
 ## 4. Brief → Instagram caption adapter (`instagram_caption.py`)

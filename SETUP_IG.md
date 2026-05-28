@@ -1,77 +1,97 @@
 # Instagram Setup for @jerseysmokebbq
 
-One-time manual setup before the daily publisher can run. The Graph API
-side has to be done by hand in Meta's UI — there's no programmatic path
-for app creation or token issuance.
+Uses **Instagram Business Login** (the newer Meta auth flow) — NOT Facebook
+Login + Page tokens. This path avoids the FB-Page-to-IG connection mess.
 
-## 1. Confirm account shape
-- Instagram account is **Business** or **Creator** (Settings → Account →
-  Switch account type). You confirmed this is already done.
-- The IG account is linked to a Facebook Page you admin.
+## 1. Account requirements
+- IG account is **Business** or **Creator** (Settings → Account → Switch
+  account type). Already confirmed.
+- IG account does NOT need to be linked to a Facebook Page for this flow.
 
-## 2. Create a Meta Developer App
-1. Go to https://developers.facebook.com/apps and click **Create App**.
-2. Use case: **Other** → App type: **Business**.
-3. Name it `jerseysmokebbq-publisher`.
+## 2. Meta app — already created
+- App: **JerseySmokeBBQ** (App ID `1832946314333428`)
+- Use case enabled: **Manage messaging & content on Instagram**
 
-## 3. Add products
-- Add **Instagram Graph API**.
-- Add **Facebook Login for Business** (used to mint the page token).
+## 3. Enable Instagram Business Login + redirect URI
+1. Go to https://developers.facebook.com/apps/1832946314333428/use_cases
+2. Tap the pencil ✏️ next to **Manage messaging & content on Instagram**
+3. Find section **"4. Set up Instagram business login"** → tap **Set up**
+4. In the OAuth settings:
+   - **Valid OAuth Redirect URIs**: add `https://localhost/`
+   - (Optional) Deauthorize callback URL: leave blank
+   - (Optional) Data deletion request URL: leave blank
+5. Save
 
-## 4. Mint a long-lived Page access token
-1. In the Graph API Explorer, select your app and your Page.
-2. Request these scopes:
-   - `instagram_basic`
-   - `instagram_content_publish`
-   - `pages_show_list`
-   - `pages_read_engagement`
-3. Generate a short-lived user token, then exchange it for a long-lived
-   token (60 days). Then exchange THAT for a long-lived **Page** token —
-   page tokens minted from a long-lived user token don't expire as long as
-   the user token stays valid.
-4. Save the page token as `IG_ACCESS_TOKEN` in `.env`.
+## 4. Grant permissions in the use case
+In the same "Manage messaging & content on Instagram" customize page,
+section 1 (Add required permissions) — verify these are added:
+- `instagram_business_basic` ✓ (added automatically)
+- `instagram_business_content_publish` ← add if missing
+- `instagram_business_manage_comments` ← add if you want auto-comments
+- `instagram_business_manage_messages` (optional)
 
-## 5. Find IG_USER_ID
-Call:
+## 5. Mint the long-lived Instagram User token
+Run the helper script locally (not in a server) since it walks you through
+a browser OAuth flow:
 
+```bash
+git pull
+pip install -r requirements.txt
+export META_APP_ID=1832946314333428
+export META_APP_SECRET=...     # App settings → Basic → Show
+python mint_ig_token.py
 ```
-GET /{page-id}?fields=instagram_business_account&access_token={token}
-```
 
-The returned `instagram_business_account.id` is your `IG_USER_ID`. Save it
-in `.env`.
-
-## 6. Image hosting (Supabase — already provisioned)
-A dedicated Supabase project `jerseysmokebbq`
-(ref `tewmbnlldtavuqzaolve`, us-east-1) and a public bucket `bbq-covers`
-(5 MB cap, png/jpeg/webp) are already in place. The uploader lives at
-`image_host.upload()` and is wired into `publish_brief.py`.
-
-You only need to grab the **service-role key** and set two env vars:
-
-1. In the Supabase dashboard, open the `jerseysmokebbq` project →
-   **Project Settings → API → Project API keys → service_role**. Copy.
-2. Locally, add to `.env`:
+The script prints:
+1. An authorization URL — open it in your browser
+2. You log in to **@jerseysmokebbq** on Instagram
+3. Approve the scopes
+4. Instagram redirects to `https://localhost/?code=XXXX` (page won't load,
+   that's fine — copy the `code` value from the URL bar)
+5. Paste it back into the script
+6. Script exchanges short-lived → long-lived token and prints:
    ```
-   SUPABASE_URL=https://tewmbnlldtavuqzaolve.supabase.co
-   SUPABASE_SERVICE_ROLE_KEY=<paste>
+   IG_ACCESS_TOKEN = IGAA...
+   IG_USER_ID      = 17841...
    ```
-3. In GitHub: repo **Settings → Secrets and variables → Actions → New
-   secret** for both `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 
-> The service-role key bypasses RLS — never expose it to a browser or to
-> the IG side. It only lives in `.env` (gitignored) and in the GitHub
-> Actions secret store.
+## 6. Save to GitHub Actions secrets
+Repo → Settings → Secrets and variables → Actions → update both:
+- `IG_ACCESS_TOKEN` — the `IGAA…` token (long-lived, 60-day life)
+- `IG_USER_ID` — the `17841…` number
 
-## 7. Verify with a preview run
-```
-python publish_brief.py --preview
-```
-Confirms the caption + image pipeline works without touching IG.
+## 7. Token refresh (every 60 days)
+The long-lived IG token expires after 60 days but can be refreshed without
+re-doing the OAuth flow:
 
-## 8. First live publish
 ```
-PUBLISH_ENABLED=true python publish_brief.py
+GET https://graph.instagram.com/refresh_access_token
+  ?grant_type=ig_refresh_token
+  &access_token={current_token}
 ```
-Watch the first run carefully. If anything misfires, set
-`PUBLISH_ENABLED=false` and the cron will skip until you fix it.
+
+For now: re-run `mint_ig_token.py` whenever the token nears expiry.
+(Future: add a `refresh_ig_token.py` script + a monthly cron.)
+
+## 8. Supabase image hosting (already provisioned)
+A `jerseysmokebbq` Supabase project (ref `tewmbnlldtavuqzaolve`,
+us-east-1) with a public `bbq-covers` bucket already exists. The
+service-role key is in `SUPABASE_SERVICE_ROLE_KEY`.
+
+## 9. Verify with a preview run
+Actions → Daily IG publish → Run workflow → leave Preview checked → Run.
+The Publish step output ends with a preview URL — open it to see the post
+mocked up.
+
+## 10. First live publish
+Actions → Daily IG publish → Run workflow → **uncheck Preview** → Run.
+Watch for `[+] published media_id=…` in the logs.
+
+## 11. Daily cron via cron-job.org
+- cron-job.org POSTs to:
+  `https://api.github.com/repos/wilkowskij/bbq-grilling-researcher/actions/workflows/daily-publish.yml/dispatches`
+- Headers: `Authorization: Bearer {fine-grained-PAT}`,
+  `Accept: application/vnd.github+json`,
+  `X-GitHub-Api-Version: 2022-11-28`
+- Body: `{"ref":"main","inputs":{"preview":"false"}}`
+- Schedule: whenever you want it to fire daily

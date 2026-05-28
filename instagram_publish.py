@@ -1,4 +1,8 @@
-"""Instagram Graph API publisher.
+"""Instagram API publisher (Instagram Business Login flow).
+
+Uses the newer Instagram API with `graph.instagram.com` and an Instagram
+User access token (IGAA...) minted via Instagram Business Login OAuth at
+api.instagram.com — NOT the older Facebook Login + Page-token path.
 
 Flow:
     1. POST /{ig-user-id}/media        -> creation_id
@@ -6,9 +10,8 @@ Flow:
     3. POST /{ig-user-id}/media_publish -> media_id
     4. POST /{media_id}/comments       (first comment with source URLs)
 
-The Graph API requires the image to live at a public HTTPS URL. The caller
-is responsible for uploading the generated image to S3 / R2 / Supabase /
-similar and passing the URL in.
+The image must live at a public HTTPS URL (the caller uploads to Supabase
+and passes the URL in).
 """
 
 from __future__ import annotations
@@ -20,7 +23,7 @@ from dataclasses import dataclass
 import requests
 
 
-GRAPH_BASE = "https://graph.facebook.com/v21.0"
+GRAPH_BASE = "https://graph.instagram.com/v21.0"
 
 
 @dataclass
