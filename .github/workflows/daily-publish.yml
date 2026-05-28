@@ -5,6 +5,15 @@ on:
     # 14:30 UTC = 10:30 AM ET (NJ-friendly posting time)
     - cron: "30 14 * * *"
   workflow_dispatch:
+    inputs:
+      preview:
+        description: "Preview only (skip the actual IG publish call). Safe to run."
+        type: boolean
+        default: true
+      topic:
+        description: "Override today's topic (leave blank for the rotation)."
+        type: string
+        default: ""
 
 jobs:
   publish:
@@ -30,4 +39,13 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           PUBLISH_ENABLED: ${{ vars.PUBLISH_ENABLED || 'true' }}
-        run: python publish_brief.py
+        run: |
+          ARGS=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.preview }}" = "true" ]; then
+            ARGS="$ARGS --preview"
+          fi
+          if [ -n "${{ inputs.topic }}" ]; then
+            ARGS="$ARGS --topic \"${{ inputs.topic }}\""
+          fi
+          echo "Running: python publish_brief.py $ARGS"
+          eval "python publish_brief.py $ARGS"
