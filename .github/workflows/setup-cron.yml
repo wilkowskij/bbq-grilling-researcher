@@ -14,9 +14,9 @@ on:
         default: '0'
         type: string
       ref:
-        description: 'Git ref (branch) to dispatch on. Change to "main" after merging.'
+        description: 'Git ref (branch) to dispatch on.'
         required: false
-        default: 'claude/bbq-grilling-researcher-P0qvS'
+        default: 'main'
         type: string
 
 jobs:
