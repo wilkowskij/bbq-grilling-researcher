@@ -25,6 +25,8 @@ def main() -> int:
     app_id = os.environ["META_APP_ID"]
     app_secret = os.environ["META_APP_SECRET"]
     code = os.environ["AUTH_CODE"].strip()
+    if "code=" in code:
+        code = code.split("code=", 1)[1]
     if "&" in code:
         code = code.split("&", 1)[0]
     if code.endswith("#_"):
