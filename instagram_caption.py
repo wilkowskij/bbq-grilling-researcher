@@ -83,22 +83,34 @@ def _pick_hashtags(topic: str) -> list[str]:
     return tags[:HASHTAG_MAX]
 
 
+SAVE_CTA = "Save this for your next cook ↓"
+
+
+def _strip_verdict_block(body: str) -> str:
+    return re.sub(
+        r"(?im)^\s*VERDICT[:\s].*?(?:\n\s*\n|\Z)",
+        "",
+        body,
+        count=1,
+    ).strip()
+
+
 def build_post(topic: str, brief_md: str) -> IGPost:
     verdict = _extract_verdict(brief_md)
     body = _strip_markdown(brief_md)
-    # Drop the Sources section from the caption; goes in first comment.
-    body = re.split(r"\n\s*Sources\s*\n", body, maxsplit=1)[0].strip()
+    body = re.split(r"\n\s*Sources:?\s*\n", body, maxsplit=1)[0].strip()
+    body = _strip_verdict_block(body)
 
     hashtags = _pick_hashtags(topic)
     tag_line = " ".join(hashtags)
 
     hook = verdict or f"Hot take on {topic}."
-    caption = f"{hook}\n\n{body}\n\nSources in the comments ↓\n\n{tag_line}"
+    caption = f"{hook}\n\n{body}\n\n{SAVE_CTA}\n\n{tag_line}"
 
     if len(caption) > CAPTION_MAX:
-        budget = CAPTION_MAX - (len(hook) + len("\n\nSources in the comments ↓\n\n") + len(tag_line) + 4)
+        budget = CAPTION_MAX - (len(hook) + len(SAVE_CTA) + len(tag_line) + 8)
         truncated = body[: max(0, budget)].rsplit(" ", 1)[0] + "…"
-        caption = f"{hook}\n\n{truncated}\n\nSources in the comments ↓\n\n{tag_line}"
+        caption = f"{hook}\n\n{truncated}\n\n{SAVE_CTA}\n\n{tag_line}"
 
     urls = _extract_source_urls(brief_md)
     if urls:

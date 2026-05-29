@@ -4,25 +4,21 @@ from instagram_caption import build_post
 from safety import check_caption
 
 
-SAMPLE_BRIEF = """## Conventional wisdom
-Wrapping brisket in butcher paper at 165F is the only way to push through
-the stall without ruining bark.
+SAMPLE_BRIEF = """VERDICT: The wrap-at-165 rule is cargo-cult — wrap by feel, not by thermometer.
 
-## The pushback
-Aaron Franklin himself has said he wraps later than most teach, and several
-competition cooks in [1] argue no-wrap produces a deeper bark with only a
-30-minute cook-time penalty. AmazingRibs' tests in [2] showed bark
-moisture differences smaller than the variance between two briskets.
+The Lie:
+Hey Grill Hey and every backyard tutorial say wrap brisket in butcher paper at exactly 165F to push through the stall [2].
 
-## VERDICT
-The wrap-at-165 rule is cargo-cult — wrap by feel (probe slides like warm
-butter through fat) or skip the wrap entirely on a humid pit.
+Do This Instead:
+1. Probe the flat at 30 min intervals starting at 160F internal.
+2. Wrap only when probe slides through point fat with under 2 lbs of force.
+3. Spritz the unwrapped surface every 45 min with 50/50 water + cider vinegar.
+4. Pull at 203F internal, rest 1 hour in a 150F oven.
 
-## Try this weekend
-- Run two flats side-by-side: one wrapped at 165, one no-wrap. Compare bark.
-- Spritz hourly with 50/50 water + cider vinegar instead of wrapping.
+Why It Works:
+AmazingRibs lab tests in [1] showed temperature-triggered wrapping varies bark moisture by less than the variance between two briskets — probe feel is the real signal.
 
-## Sources
+Sources:
 [1] https://amazingribs.com/tested-recipes/beef-and-bison-recipes/brisket-recipe
 [2] https://heygrillhey.com/texas-style-smoked-brisket/
 """
@@ -34,9 +30,13 @@ def main():
 
     assert post.caption.startswith("The wrap-at-165 rule"), \
         f"hook not extracted, caption starts: {post.caption[:80]!r}"
+    assert post.caption.count("wrap-at-165") == 1, \
+        "VERDICT line duplicated in body — _strip_verdict_block broken"
+    assert "Save this for your next cook" in post.caption, "save CTA missing"
     assert "#brisket" in post.caption, "topic hashtag missing"
     assert "#jerseysmokebbq" in post.caption, "brand hashtag missing"
     assert "amazingribs.com" in post.first_comment, "source URL missing from first comment"
+    assert "amazingribs.com" not in post.caption, "source URLs leaked into caption"
     assert len(post.caption) <= 2200, f"caption too long: {len(post.caption)}"
     assert "##" not in post.caption, "markdown headers leaked into caption"
 
