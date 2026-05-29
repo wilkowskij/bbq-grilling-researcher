@@ -1,0 +1,41 @@
+name: Setup cron-job.org trigger
+
+on:
+  workflow_dispatch:
+    inputs:
+      hour_utc:
+        description: 'Hour 0-23 in UTC to fire daily. 14 = 10am ET / 7am PT.'
+        required: false
+        default: '14'
+        type: string
+      minute:
+        description: 'Minute 0-59'
+        required: false
+        default: '0'
+        type: string
+      ref:
+        description: 'Git ref (branch) to dispatch on. Change to "main" after merging.'
+        required: false
+        default: 'claude/bbq-grilling-researcher-P0qvS'
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install requests
+
+      - name: Create / replace cron-job.org daily trigger
+        env:
+          CRON_JOB_ORG_API_KEY: ${{ secrets.CRON_JOB_ORG_API_KEY }}
+          GITHUB_DISPATCH_PAT: ${{ secrets.GITHUB_DISPATCH_PAT }}
+          CRON_HOUR_UTC: ${{ inputs.hour_utc }}
+          CRON_MINUTE: ${{ inputs.minute }}
+          CRON_REF: ${{ inputs.ref }}
+        run: python setup_cron_job.py
