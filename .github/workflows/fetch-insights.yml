@@ -1,0 +1,27 @@
+name: Fetch IG insights
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 13:00 UTC daily, one hour before daily-publish so it captures the
+    # previous day's full 24h numbers.
+    - cron: '0 13 * * *'
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: pip install -r requirements.txt
+
+      - name: Snapshot insights
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python fetch_insights.py

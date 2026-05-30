@@ -20,8 +20,9 @@ from brief import synthesize
 from config import WEEKLY_TOPICS
 from image_gen import generate as generate_image
 from image_host import upload as upload_image, upload_html
-from instagram_caption import build_post
+from instagram_caption import _extract_featured_handle, build_post
 from instagram_publish import InstagramPublisher
+from insights_db import record_post
 from preview_html import render as render_preview
 from safety import (
     check_caption,
@@ -126,6 +127,19 @@ def main() -> int:
         raise
 
     record_publish(LEDGER, result.media_id, topic)
+    try:
+        record_post(
+            media_id=result.media_id,
+            topic=topic,
+            caption_preview=post.caption,
+            image_url=image_url,
+            style_tag="recipe_card",
+            featured_handle=_extract_featured_handle(brief.markdown) or None,
+        )
+    except Exception as e:
+        # Analytics is best-effort — don't fail a successful publish if the
+        # insights DB write blows up.
+        print(f"[!] record_post failed (analytics only): {e}", file=sys.stderr)
     print(f"[+] published media_id={result.media_id} comment_id={result.comment_id}", file=sys.stderr)
     return 0
 
