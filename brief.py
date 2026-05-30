@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from anthropic import Anthropic
 
-from config import CONTRARIAN_LENSES
+from config import CONTRARIAN_LENSES, KNOWN_PITMASTER_HANDLES
 from tavily_client import Hit
 
 
@@ -35,8 +35,9 @@ hook Instagram shows above the "...more" fold. It must name the dogma being
 rejected and the corrective stance in a single line.>
 
 The Lie:
-<ONE sentence stating the conventional wisdom that is wrong, naming who
-teaches it (a brand, a recipe blog, a tradition). Cite [n] if you can.>
+<ONE sentence stating the conventional wisdom that is wrong. Refer to it
+generically ("most backyard tutorials say...", "the standard recipe blog
+take is..."). Do NOT name a specific person, brand, or blog here.>
 
 Do This Instead:
 1. <specific action with a number — temp in degrees, time in minutes/hours,
@@ -46,19 +47,28 @@ Do This Instead:
 4. <optional fourth step, only if needed>
 
 Why It Works:
-<ONE sentence. Cite the credible pitmaster, lab test, or evidence as [n].>
+<ONE sentence. Name ONE primary credible pitmaster, blog, or source — the
+single most authoritative voice on this take. Cite them as [n]. This is
+the ONLY place a specific source/person is named in the body.>
 
 Sources:
 [1] <url>
 [2] <url>
 ...
 
+Featured: <pick the slug of the ONE source named in "Why It Works" from the
+KNOWN_PITMASTER_HANDLES list provided by the user. Output exactly one slug,
+no @ symbol, no brackets, no quotes. If none of the listed slugs fit, output
+the literal word "none".>
+
 Hard rules:
-- Total body excluding Sources MUST be UNDER 150 words. Count them.
+- Total body excluding Sources/Featured MUST be UNDER 150 words. Count them.
 - VERDICT must be a single sentence, MAX 180 characters.
 - The VERDICT sentence must NOT be repeated anywhere else in the brief.
 - Numbered steps must each contain a concrete number (e.g. 225F, 30 min,
   1 tbsp, 1.5 inches). A step without a number is rejected.
+- The body must name AT MOST ONE specific source/pitmaster/brand, and only
+  in "Why It Works". The Lie must stay generic.
 - No "it depends." Pick a side.
 - No "consider both perspectives." Take a position.
 - Cite credible sources inline with [n] matching the Sources list.
@@ -91,6 +101,7 @@ def synthesize(topic: str, hits: list[Hit], api_key: str | None = None) -> Brief
 
     lenses = "\n".join(f"- {l}" for l in CONTRARIAN_LENSES)
     sources = _format_sources(hits)
+    handles = "\n".join(f"- {k}" for k in sorted(KNOWN_PITMASTER_HANDLES))
 
     user_msg = f"""Topic: {topic}
 
@@ -101,10 +112,15 @@ Sources (numbered for inline citation):
 
 {sources}
 
+KNOWN_PITMASTER_HANDLES (use ONE slug for the Featured line, or "none"):
+{handles}
+
 Write the brief now using the exact structure from the system prompt:
-VERDICT line, then "The Lie:", then "Do This Instead:" with numbered steps
-containing concrete numbers, then "Why It Works:", then "Sources:".
+VERDICT, "The Lie:" (generic, no names), "Do This Instead:" (numbered
+steps with concrete numbers), "Why It Works:" (name ONE source/pitmaster,
+cite [n]), "Sources:", then "Featured: <slug>".
 Total body under 150 words. The VERDICT sentence must not be repeated.
+At most one specific source/pitmaster named in the entire body.
 """
 
     resp = client.messages.create(

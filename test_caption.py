@@ -7,7 +7,7 @@ from safety import check_caption
 SAMPLE_BRIEF = """VERDICT: The wrap-at-165 rule is cargo-cult — wrap by feel, not by thermometer.
 
 The Lie:
-Hey Grill Hey and every backyard tutorial say wrap brisket in butcher paper at exactly 165F to push through the stall [2].
+Most backyard tutorials say wrap brisket in butcher paper at exactly 165F to push through the stall.
 
 Do This Instead:
 1. Probe the flat at 30 min intervals starting at 160F internal.
@@ -21,6 +21,8 @@ AmazingRibs lab tests in [1] showed temperature-triggered wrapping varies bark m
 Sources:
 [1] https://amazingribs.com/tested-recipes/beef-and-bison-recipes/brisket-recipe
 [2] https://heygrillhey.com/texas-style-smoked-brisket/
+
+Featured: amazingribs
 """
 
 
@@ -33,6 +35,9 @@ def main():
     assert post.caption.count("wrap-at-165") == 1, \
         "VERDICT line duplicated in body — _strip_verdict_block broken"
     assert "Save this for your next cook" in post.caption, "save CTA missing"
+    assert "Featuring @amazingribs" in post.caption, "featured @-tag missing or wrong"
+    assert post.caption.count("@amazingribs") == 1, "@-tag duplicated"
+    assert "Featured: amazingribs" not in post.caption, "raw Featured: line leaked into caption"
     assert "#brisket" in post.caption, "topic hashtag missing"
     assert "#jerseysmokebbq" in post.caption, "brand hashtag missing"
     assert "amazingribs.com" in post.first_comment, "source URL missing from first comment"

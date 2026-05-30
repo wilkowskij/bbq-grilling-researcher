@@ -11,6 +11,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from config import KNOWN_PITMASTER_HANDLES
+
 CAPTION_MAX = 2200
 HASHTAG_MAX = 30
 
@@ -95,22 +97,39 @@ def _strip_verdict_block(body: str) -> str:
     ).strip()
 
 
+def _extract_featured_handle(brief_md: str) -> str:
+    m = re.search(r"(?im)^\s*Featured:\s*([@\w.-]+)\s*$", brief_md)
+    if not m:
+        return ""
+    raw = m.group(1).strip().lower().lstrip("@")
+    if not raw or raw == "none":
+        return ""
+    return KNOWN_PITMASTER_HANDLES.get(raw, "")
+
+
+def _strip_featured_line(body: str) -> str:
+    return re.sub(r"(?im)^\s*Featured:.*$\n?", "", body).strip()
+
+
 def build_post(topic: str, brief_md: str) -> IGPost:
     verdict = _extract_verdict(brief_md)
+    featured = _extract_featured_handle(brief_md)
     body = _strip_markdown(brief_md)
     body = re.split(r"\n\s*Sources:?\s*\n", body, maxsplit=1)[0].strip()
     body = _strip_verdict_block(body)
+    body = _strip_featured_line(body)
 
     hashtags = _pick_hashtags(topic)
     tag_line = " ".join(hashtags)
+    feature_line = f"Featuring {featured}\n\n" if featured else ""
 
     hook = verdict or f"Hot take on {topic}."
-    caption = f"{hook}\n\n{body}\n\n{SAVE_CTA}\n\n{tag_line}"
+    caption = f"{hook}\n\n{body}\n\n{SAVE_CTA}\n\n{feature_line}{tag_line}"
 
     if len(caption) > CAPTION_MAX:
-        budget = CAPTION_MAX - (len(hook) + len(SAVE_CTA) + len(tag_line) + 8)
+        budget = CAPTION_MAX - (len(hook) + len(SAVE_CTA) + len(feature_line) + len(tag_line) + 8)
         truncated = body[: max(0, budget)].rsplit(" ", 1)[0] + "…"
-        caption = f"{hook}\n\n{truncated}\n\n{SAVE_CTA}\n\n{tag_line}"
+        caption = f"{hook}\n\n{truncated}\n\n{SAVE_CTA}\n\n{feature_line}{tag_line}"
 
     urls = _extract_source_urls(brief_md)
     if urls:

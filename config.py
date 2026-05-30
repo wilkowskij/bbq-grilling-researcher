@@ -53,3 +53,36 @@ CONTRARIAN_LENSES = [
     "Is the gear/technique actually worth it, or is it cargo-cult BBQ?",
     "What is the evidence the dogma is based on, and does it hold up?",
 ]
+
+
+# Map of credible pitmaster / source identifiers (lowercase, no spaces) ->
+# their public Instagram handle. The brief is required to pick exactly ONE
+# of these to feature; anything not in this map is rejected so we don't
+# hallucinate fake @-tags into the caption.
+KNOWN_PITMASTER_HANDLES = {
+    "amazingribs": "@amazingribs",
+    "meathead": "@amazingribs",
+    "heygrillhey": "@heygrillhey",
+    "susiebulloch": "@heygrillhey",
+    "aaronfranklin": "@franklinbarbecue",
+    "franklinbarbecue": "@franklinbarbecue",
+    "meatchurch": "@meatchurch",
+    "mattpittman": "@meatchurch",
+    "malcomreed": "@howtobbqright",
+    "howtobbqright": "@howtobbqright",
+    "killerhogs": "@howtobbqright",
+    "smokedbbqsource": "@smokedbbqsource",
+    "chudsbbq": "@chudsbbq",
+    "bradleyrobinson": "@chudsbbq",
+    "kosmosq": "@kosmosq",
+    "pitmasterx": "@pitmasterx",
+    "rogerthat": "@pitmasterx",
+    "barbecuebible": "@steven_raichlen",
+    "stevenraichlen": "@steven_raichlen",
+    "texasmonthly": "@texasmonthly",
+    "seriouseats": "@seriouseats",
+    "atbbq": "@atbbq",
+    "bigpoppasmokers": "@bigpoppasmokers",
+    "traeger": "@traegergrills",
+    "weber": "@webergrills",
+}
