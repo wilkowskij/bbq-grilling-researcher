@@ -59,7 +59,10 @@ def main() -> int:
     minute = int(os.environ.get("CRON_MINUTE", "0"))
     ref = os.environ.get("CRON_REF", "main")
 
-    body = json.dumps({"ref": ref, "inputs": {"preview": "false"}})
+    # `preview` is declared as `type: boolean` in daily-publish.yml, so the
+    # workflow_dispatch REST API rejects the string "false" with HTTP 422
+    # ("Unexpected value 'false'"). Must be a real JSON boolean.
+    body = json.dumps({"ref": ref, "inputs": {"preview": False}})
 
     payload = {
         "job": {
