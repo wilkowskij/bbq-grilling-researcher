@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 from anthropic import Anthropic
 
@@ -16,6 +17,28 @@ from tavily_client import Hit
 
 
 MODEL = "claude-sonnet-4-6"
+
+
+def _load_stop_slop() -> str:
+    """Read the stop-slop SKILL.md so its prose rules apply to every brief.
+
+    Returns the SKILL.md body with YAML frontmatter stripped, or "" if the
+    skill isn't installed (e.g. someone cloned the repo without running
+    `npx skills add ...`). Empty string means brief synthesis still works,
+    just without the extra anti-slop guidance.
+    """
+    skill = Path(__file__).parent / ".agents" / "skills" / "stop-slop" / "SKILL.md"
+    try:
+        raw = skill.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+    if raw.startswith("---\n"):
+        _, _, body = raw[4:].partition("---\n")
+        raw = body or raw
+    return raw.strip()
+
+
+_STOP_SLOP = _load_stop_slop()
 
 
 SYSTEM_PROMPT = """You are a contrarian BBQ research analyst writing
@@ -74,6 +97,15 @@ Hard rules:
 - Cite credible sources inline with [n] matching the Sources list.
 - Reject sponsored-content language. If a source is selling something, say so.
 """
+
+if _STOP_SLOP:
+    SYSTEM_PROMPT += (
+        "\n\nAdditionally, the brief prose must follow the stop-slop "
+        "writing rules below. Pitmasters can smell AI slop from across "
+        "the cookout; these rules keep the caption sounding like a "
+        "human who actually cooks.\n\n"
+        + _STOP_SLOP
+    )
 
 
 @dataclass
