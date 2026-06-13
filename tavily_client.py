@@ -39,7 +39,18 @@ class BBQTavily:
             raise RuntimeError("TAVILY_API_KEY is not set")
         self.client = TavilyClient(api_key=key)
 
-    def search(self, topic: str, max_per_lens: int = 4) -> list[Hit]:
+    def search(
+        self,
+        topic: str,
+        max_per_lens: int = 4,
+        exclude_domains: list[str] | None = None,
+    ) -> list[Hit]:
+        # Filter the allowlist instead of passing exclude_domains alongside —
+        # narrower allowlist is a stronger guarantee than relying on Tavily
+        # to apply both filters cleanly.
+        excluded = set(exclude_domains or [])
+        allowed = [d for d in BBQ_DOMAINS if d not in excluded] or BBQ_DOMAINS
+
         hits: list[Hit] = []
         seen_urls: set[str] = set()
         for lens, template in SUB_QUERY_TEMPLATES.items():
@@ -50,7 +61,7 @@ class BBQTavily:
                 topic="news",
                 days=14,
                 max_results=max_per_lens,
-                include_domains=BBQ_DOMAINS,
+                include_domains=allowed,
                 include_answer=False,
             )
             for r in resp.get("results", []):

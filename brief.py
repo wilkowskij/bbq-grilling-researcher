@@ -122,7 +122,12 @@ def _format_sources(hits: list[Hit]) -> str:
     return "\n\n".join(lines)
 
 
-def synthesize(topic: str, hits: list[Hit], api_key: str | None = None) -> Brief:
+def synthesize(
+    topic: str,
+    hits: list[Hit],
+    api_key: str | None = None,
+    exclude_handles: list[str] | None = None,
+) -> Brief:
     key = api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
@@ -131,9 +136,31 @@ def synthesize(topic: str, hits: list[Hit], api_key: str | None = None) -> Brief
 
     client = Anthropic(api_key=key)
 
+    # Source-diversity: drop any slug whose @-tag was featured in the last
+    # N posts. Multiple slugs can map to the same @-tag (e.g. `meathead`
+    # and `amazingribs` both resolve to @amazingribs), so we filter by the
+    # value, not the key, to make sure both spellings are blocked.
+    exclude_set = {h.strip().lower() for h in (exclude_handles or []) if h}
+    available_handles = {
+        slug: handle
+        for slug, handle in KNOWN_PITMASTER_HANDLES.items()
+        if handle.lower() not in exclude_set
+    } or KNOWN_PITMASTER_HANDLES
+
     lenses = "\n".join(f"- {l}" for l in CONTRARIAN_LENSES)
     sources = _format_sources(hits)
-    handles = "\n".join(f"- {k}" for k in sorted(KNOWN_PITMASTER_HANDLES))
+    handles = "\n".join(f"- {k}" for k in sorted(available_handles))
+
+    exclusion_note = ""
+    if exclude_set:
+        recent_list = ", ".join(sorted(exclude_set))
+        exclusion_note = (
+            f"\n\nSource diversity rule (HARD): the following pitmaster "
+            f"handles were featured in the last 7 posts and MUST NOT be "
+            f"cited in this brief: {recent_list}. Pick a different voice "
+            f"for 'Why It Works'. The slug list above already excludes "
+            f"them; do not work around the exclusion.\n"
+        )
 
     user_msg = f"""Topic: {topic}
 
@@ -146,7 +173,7 @@ Sources (numbered for inline citation):
 
 KNOWN_PITMASTER_HANDLES (use ONE slug for the Featured line, or "none"):
 {handles}
-
+{exclusion_note}
 Write the brief now using the exact structure from the system prompt:
 VERDICT, "The Lie:" (generic, no names), "Do This Instead:" (numbered
 steps with concrete numbers), "Why It Works:" (name ONE source/pitmaster,

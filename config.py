@@ -86,3 +86,23 @@ KNOWN_PITMASTER_HANDLES = {
     "traeger": "@traegergrills",
     "weber": "@webergrills",
 }
+
+
+# Reverse mapping from the public @-tag back to the BBQ_DOMAINS that source
+# owns. Used by the source-diversity rule: when a handle is in the last 7
+# featured posts, drop its domain from the Tavily allowlist for the next
+# brief so the same outlet's content can't dominate the corpus either.
+# Handles without a corresponding domain in BBQ_DOMAINS (e.g. individual
+# pitmasters like @franklinbarbecue) just don't get a domain exclusion.
+HANDLE_TO_DOMAINS = {
+    "@amazingribs":     ["amazingribs.com"],
+    "@heygrillhey":     ["heygrillhey.com"],
+    "@meatchurch":      ["meatchurch.com"],
+    "@howtobbqright":   ["killerhogs.com"],
+    "@smokedbbqsource": ["smokedbbqsource.com"],
+    "@pitmasterx":      ["pitmasterx.com"],
+    "@steven_raichlen": ["barbecuebible.com"],
+    "@texasmonthly":    ["texasmonthly.com"],
+    "@seriouseats":     ["seriouseats.com"],
+    "@atbbq":           ["atbbq.com"],
+}

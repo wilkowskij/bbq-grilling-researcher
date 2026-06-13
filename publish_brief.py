@@ -17,12 +17,12 @@ from datetime import date
 from dotenv import load_dotenv
 
 from brief import synthesize
-from config import WEEKLY_TOPICS
+from config import HANDLE_TO_DOMAINS, WEEKLY_TOPICS
 from image_gen import generate as generate_image
 from image_host import upload as upload_image, upload_html
 from instagram_caption import _extract_featured_handle, build_post
 from instagram_publish import InstagramPublisher
-from insights_db import record_post
+from insights_db import recent_featured_handles, record_post
 from preview_html import render as render_preview
 from safety import (
     check_caption,
@@ -68,11 +68,26 @@ def main() -> int:
         check_publish_enabled()
         check_rate_limit(LEDGER)
 
+    try:
+        recent_handles = recent_featured_handles(n=7)
+    except Exception as e:
+        print(f"[!] could not fetch recent featured handles, no exclusion: {e}",
+              file=sys.stderr)
+        recent_handles = []
+
+    excluded_domains: list[str] = []
+    for h in recent_handles:
+        excluded_domains.extend(HANDLE_TO_DOMAINS.get(h, []))
+    if recent_handles:
+        print(f"    excluding last-7 handles: {recent_handles}", file=sys.stderr)
+    if excluded_domains:
+        print(f"    excluding domains: {excluded_domains}", file=sys.stderr)
+
     tavily = BBQTavily()
-    hits = tavily.search(topic)
+    hits = tavily.search(topic, exclude_domains=excluded_domains or None)
     print(f"    {len(hits)} hits", file=sys.stderr)
 
-    brief = synthesize(topic, hits)
+    brief = synthesize(topic, hits, exclude_handles=recent_handles or None)
     BRIEFS_DIR.mkdir(parents=True, exist_ok=True)
     brief_path = BRIEFS_DIR / f"{target_day.isoformat()}-{topic.replace(' ', '-')}.md"
     brief_path.write_text(brief.markdown)

@@ -72,6 +72,25 @@ def list_recent_posts(days: int = 30) -> list[dict[str, Any]]:
     return r.json()
 
 
+def recent_featured_handles(n: int = 7) -> list[str]:
+    """Return the featured_handle values from the last `n` posts (newest first).
+
+    Used to enforce the source-diversity rule: a pitmaster handle that
+    appears in this list MUST NOT be featured again in the brief about to
+    be synthesized. NULLs are skipped, so a post that didn't pick a
+    featured source doesn't burn a slot in the rolling window.
+    """
+    params = {
+        "select": "featured_handle,posted_at",
+        "order": "posted_at.desc",
+        "limit": str(n),
+    }
+    r = requests.get(_rest("/posts"), headers=_headers(), params=params, timeout=30)
+    if not r.ok:
+        raise RuntimeError(f"recent_featured_handles failed [{r.status_code}]: {r.text}")
+    return [row["featured_handle"] for row in r.json() if row.get("featured_handle")]
+
+
 def record_insights(*, post_id: int, media_id: str, metrics: dict[str, int | None]) -> None:
     payload = {
         "post_id": post_id,
