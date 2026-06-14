@@ -1,8 +1,8 @@
 name: Daily IG publish
 
-# Triggered by cron-job.org via the workflow_dispatch REST API.
-# GitHub's native schedule is intentionally disabled to avoid double-firing.
 on:
+  schedule:
+    - cron: '0 14 * * *'  # 14:00 UTC = 10am ET / 7am PT
   workflow_dispatch:
     inputs:
       preview:
@@ -42,7 +42,9 @@ jobs:
           PUBLISH_ENABLED: ${{ vars.PUBLISH_ENABLED || 'true' }}
         run: |
           ARGS=""
-          if [ "${{ inputs.preview }}" = "true" ]; then
+          # Only add --preview on manual dispatches where the user opted in;
+          # scheduled runs always publish for real.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.preview }}" = "true" ]; then
             ARGS="$ARGS --preview"
           fi
           if [ -n "${{ inputs.topic }}" ]; then
